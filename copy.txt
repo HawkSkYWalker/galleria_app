@@ -2,19 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
 
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+void main() {
   runApp(const MyApp());
-} 
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -27,32 +17,8 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.pink,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const AuthWrapper(), // Changed from SplashScreen
+      home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
-    );
-  }
-}
-
-class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SplashScreen();
-        }
-        
-        if (snapshot.hasData) {
-          // User is signed in
-          return const HomeScreen();
-        } else {
-          // User is not signed in
-          return const SplashScreen();
-        }
-      },
     );
   }
 }
@@ -671,7 +637,6 @@ class SignInScreen extends StatefulWidget {
   State<SignInScreen> createState() => _SignInScreenState();
 }
 
-// Then, replace your existing _signIn() method in the _SignInScreenState class:
 class _SignInScreenState extends State<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -686,123 +651,27 @@ class _SignInScreenState extends State<SignInScreen> {
     super.dispose();
   }
 
- // Add this method to your _SignInScreenState class
-Future<void> _createUserProfile(User user) async {
-  try {
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get();
-    
-    // Only create profile if it doesn't exist
-    if (!userDoc.exists) {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set({
-        'name': user.displayName ?? user.email?.split('@')[0] ?? 'User',
-        'email': user.email,
-        'createdAt': FieldValue.serverTimestamp(),
-        'level': 1,
-        'trainingCount': 0,
+  Future<void> _signIn() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
       });
-    }
-  } catch (e) {
-    print('Error creating user profile: $e');
-  }
-}
 
-// Replace your existing _signIn() method with this enhanced version:
-Future<void> _signIn() async {
-  if (_formKey.currentState!.validate()) {
-    setState(() {
-      _isLoading = true;
-    });
+      // Simulate sign in process
+      await Future.delayed(const Duration(seconds: 2));
 
-    try {
-      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-      
-      // Create user profile in Firestore if it doesn't exist
-      if (credential.user != null) {
-        await _createUserProfile(credential.user!);
-      }
-      
-      // If sign in is successful, navigate to home screen
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Navigate to home screen
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       }
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      String errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
-      
-      if (e.code == 'user-not-found') {
-        errorMessage = 'ไม่พบผู้ใช้งานสำหรับอีเมลนี้';
-      } else if (e.code == 'wrong-password') {
-        errorMessage = 'รหัสผ่านไม่ถูกต้อง';
-      } else if (e.code == 'invalid-email') {
-        errorMessage = 'รูปแบบอีเมลไม่ถูกต้อง';
-      } else if (e.code == 'user-disabled') {
-        errorMessage = 'บัญชีผู้ใช้นี้ถูกปิดใช้งาน';
-      } else if (e.code == 'too-many-requests') {
-        errorMessage = 'มีการพยายามเข้าสู่ระบบมากเกินไป กรุณาลองใหม่ในภายหลัง';
-      }
-
-      // Show error dialog
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('ข้อผิดพลาด'),
-              content: Text(errorMessage),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('ตกลง'),
-                ),
-              ],
-            );
-          },
-        );
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('ข้อผิดพลาด'),
-              content: const Text('เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('ตกลง'),
-                ),
-              ],
-            );
-          },
-        );
-      }
     }
   }
-}
-
 
   Future<void> _signInWithProvider(String provider) async {
     setState(() {
@@ -1150,124 +1019,22 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  final _formKey = GlobalKey<FormState>(); // Add this line
   bool _agreeToTerms = false;
   bool _isLoading = false;
 
-@override
-void dispose() {
-  _nameController.dispose();
-  _emailController.dispose();
-  _phoneController.dispose();
-  _passwordController.dispose();
-  _confirmPasswordController.dispose();
-  super.dispose();
-}
-
-  // Replace the existing _signUp() method in the _SignUpScreenState class with this:
-
-Future<void> _signUp() async {
-  if (_formKey.currentState!.validate() && _agreeToTerms) {
+  void _signUp() {
+    // TODO: Implement sign up logic or leave empty if handled elsewhere
     setState(() {
       _isLoading = true;
     });
-
-    try {
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-
-      // Optional: Update the user's display name
-      await credential.user?.updateDisplayName(_nameController.text.trim());
-      
-      // If sign up is successful, navigate to home screen
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-      }
-    } on FirebaseAuthException catch (e) {
+    // Simulate a delay for demonstration
+    Future.delayed(const Duration(seconds: 2), () {
       setState(() {
         _isLoading = false;
       });
-
-      String errorMessage = 'เกิดข้อผิดพลาดในการสมัครสมาชิก';
-      
-      if (e.code == 'weak-password') {
-        errorMessage = 'รหัสผ่านไม่ปลอดภัย กรุณาใช้รหัสผ่านที่แข็งแกร่งกว่านี้';
-      } else if (e.code == 'email-already-in-use') {
-        errorMessage = 'อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น';
-      } else if (e.code == 'invalid-email') {
-        errorMessage = 'รูปแบบอีเมลไม่ถูกต้อง';
-      } else if (e.code == 'operation-not-allowed') {
-        errorMessage = 'การสมัครสมาชิกด้วยอีเมล/รหัสผ่านไม่ได้รับอนุญาต';
-      }
-
-      // Show error dialog
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('ข้อผิดพลาด'),
-              content: Text(errorMessage),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('ตกลง'),
-                ),
-              ],
-            );
-          },
-        );
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('ข้อผิดพลาด'),
-              content: const Text('เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('ตกลง'),
-                ),
-              ],
-            );
-          },
-        );
-      }
-    }
-  } else if (!_agreeToTerms) {
-    // Show dialog if terms are not agreed to
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('ข้อกำหนดและเงื่อนไข'),
-          content: const Text('กรุณายอมรับข้อตกลงและเงื่อนไขการใช้งาน'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('ตกลง'),
-            ),
-          ],
-        );
-      },
-    );
+    });
   }
-}
+  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -2296,16 +2063,16 @@ class FavoritesScreen extends StatelessWidget {
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
- @override
-Widget build(BuildContext context) {
-  final double topPadding = MediaQuery.of(context).padding.top + kToolbarHeight + 16;
-  
-  return SingleChildScrollView(
-    child: Padding(
-      padding: EdgeInsets.only(top: topPadding),
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
+  @override
+  Widget build(BuildContext context) {
+    final double topPadding = MediaQuery.of(context).padding.top + kToolbarHeight + 16;
+    
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.only(top: topPadding),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
             CircleAvatar(
               radius: 60,
               backgroundColor: Colors.white,
@@ -2333,14 +2100,14 @@ Widget build(BuildContext context) {
               ),
               child: Column(
                 children: [
-                  Text(
-  FirebaseAuth.instance.currentUser?.email ?? 'hawkskywalker',
-  style: const TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.bold,
-    color: Colors.black87,
-  ),
-),
+                  const Text(
+                    'hawkskywalker',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   const Text(
                     'Nice to meet you, Lets have fun!',
@@ -2393,40 +2160,12 @@ Widget build(BuildContext context) {
                 ],
               ),
             ),
-                     // Add this sign out button at the end, before the last SizedBox
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 32),
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () async {
-                await FirebaseAuth.instance.signOut();
-                if (context.mounted) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const AuthScreen()),
-                    (route) => false,
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-              ),
-              child: const Text(
-                'ออกจากระบบ',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _statCard(String label, String value) {
     return Column(

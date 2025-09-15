@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "455956723734",
+    "project_id": "umamusume-trainer-app",
+    "storage_bucket": "umamusume-trainer-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:455956723734:android:b706ca54ab5d90279f5d37",
+        "android_client_info": {
+          "package_name": "com.example.galleria_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgxCFhFboVjbBtDjhCUGte1s20gmdqdVY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

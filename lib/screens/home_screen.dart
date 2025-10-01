@@ -1,8 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:galleria_app/screen/profile_screen.dart';
+import 'package:galleria_app/screens/profile_screen.dart';
 import '../constant/app_constant.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+
+import 'package:galleria_app/screens/events_screen.dart';
+import 'package:galleria_app/screens/updates_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,7 +20,9 @@ class _HomeScreenState extends State<HomeScreen> {
     FeedScreen(),
     Center(child: Text('Search Page', style: headingTextStyle)),
     Center(child: Text('Notifications Page', style: headingTextStyle)),
-    ProfileScreen()
+    ProfileScreen(),
+    const EventsScreen(),      // Add this
+    const UpdatesScreen()     // Add this 
   ];
 
   @override
@@ -57,7 +62,9 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(Icons.search, size: 30, color: secondaryColor),
             Icon(Icons.notifications, size: 30, color: secondaryColor),
             Icon(Icons.person, size: 30, color: secondaryColor),
-          ],
+            Icon(Icons.event, size: 30, color: secondaryColor),   // For EventsScreen
+            Icon(Icons.update, size: 30, color: secondaryColor),  // For UpdatesScreen
+],
           onTap: (index) {
             setState(() {
               _pageIndex = index;

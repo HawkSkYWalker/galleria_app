@@ -8,6 +8,13 @@ import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'screens/events_screen.dart';
+import 'screens/updates_screen.dart';
+import 'models/event_models.dart';
+
+
+
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -19,6 +26,7 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -1696,7 +1704,9 @@ class _HomeScreenState extends State<HomeScreen> {
       const FeedScreen(),
       const SearchScreen(),
       const FavoritesScreen(),
-      const ProfileScreen()
+      const ProfileScreen(),
+      const EventsScreen(),      // Add this
+      const UpdatesScreen()     
     ];
   }
 
@@ -1752,20 +1762,28 @@ class _HomeScreenState extends State<HomeScreen> {
           unselectedItemColor: Colors.white70,
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home, size: 28),
+              icon: Icon(Icons.home, size: 30, color: secondaryColor),
               label: 'หน้าแรก',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.search, size: 28),
+              icon: Icon(Icons.search, size: 30, color: secondaryColor),
               label: 'ค้นหา',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.favorite, size: 28),
+              icon: Icon(Icons.favorite, size: 30, color: secondaryColor),
               label: 'รายการโปรด',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person, size: 28),
+              icon: Icon(Icons.person, size: 30, color: secondaryColor),
               label: 'โปรไฟล์',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.event, size: 30, color: secondaryColor), // For EventsScreen
+              label: 'อีเวนต์',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.update, size: 30, color: secondaryColor), // For UpdatesScreen
+              label: 'อัปเดต',
             ),
           ],
         ),

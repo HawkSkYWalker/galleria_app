@@ -7,12 +7,58 @@ import 'firebase_options.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';  // ADD THIS LINE
+
 
 import 'screens/events_screen.dart';
 import 'screens/updates_screen.dart';
 import 'models/event_models.dart';
 
+// Favorites Manager with SharedPreferences
+class FavoritesManager {
+  static final FavoritesManager _instance = FavoritesManager._internal();
+  factory FavoritesManager() => _instance;
+  FavoritesManager._internal();
 
+  static const String _favoritesKey = 'favorite_characters';
+  List<String> _favoriteNames = [];
+
+  // Initialize and load favorites
+  Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    _favoriteNames = prefs.getStringList(_favoritesKey) ?? [];
+  }
+
+  // Get all favorite characters
+  List<Character> getFavorites() {
+    return characters.where((char) => _favoriteNames.contains(char.name)).toList();
+  }
+
+  // Check if character is favorite
+  bool isFavorite(Character character) {
+    return _favoriteNames.contains(character.name);
+  }
+
+  // Toggle favorite status
+  Future<void> toggleFavorite(Character character) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    if (_favoriteNames.contains(character.name)) {
+      _favoriteNames.remove(character.name);
+    } else {
+      _favoriteNames.add(character.name);
+    }
+    
+    await prefs.setStringList(_favoritesKey, _favoriteNames);
+  }
+
+  // Clear all favorites
+  Future<void> clearAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    _favoriteNames.clear();
+    await prefs.remove(_favoritesKey);
+  }
+}
 
 
 void main() async {
@@ -20,8 +66,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await FavoritesManager().init();  // ADD THIS LINE
   runApp(const MyApp());
-} 
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -287,7 +334,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     OnboardingPage(
       title: 'ยินดีต้อนรับสู่ Umamusume Trainer Guide!',
       description: 'แอปนี้จะช่วยให้คุณเป็นเทรนเนอร์ที่ยอดเยี่ยม พร้อมคำแนะนำการฝึกและข้อมูลตัวละครครบครัน',
-      imagePath: 'https://umamusume.com/_app/immutable/assets/kv.DlQKMfGs.png', // Local asset
+      imagePath: 'https://umamusume.com/_app/immutable/assets/kv.95F8Qc_S.png', // Local asset
       backgroundColor: Color(0xFF4FC3F7),
       icon: Icons.pets,
     ),
@@ -1832,123 +1879,164 @@ class FeedScreen extends StatelessWidget {
   }
 
   Widget _characterCard(BuildContext context, Character character) {
-    return GestureDetector(
-      onTap: () => _showCharacterDetail(context, character),
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        height: 180,
-        decoration: BoxDecoration(
-          color: Colors.lightGreen[200],
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 15,
-              offset: const Offset(0, 6),
-            ),
-          ],
-          border: Border.all(color: Colors.green, width: 2),
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                bottomLeft: Radius.circular(20),
-              ),
-              child: Image.network(
-                character.imageUrl,
-                fit: BoxFit.cover,
-                height: 180,
-                width: 140,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 140,
-                  height: 180,
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.image, size: 50, color: Colors.grey),
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            character.name,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: character.rarity == 'SSR' ? Colors.orange : Colors.blue,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            character.rarity,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      character.type,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      character.description,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.touch_app, size: 16, color: Colors.pink),
-                        const SizedBox(width: 4),
-                        Text(
-                          'แตะเพื่อดูรายละเอียด',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.pink[400],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+  return GestureDetector(
+    onTap: () => _showCharacterDetail(context, character),
+    child: Container(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      height: 180,
+      decoration: BoxDecoration(
+        color: Colors.lightGreen[200],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(color: Colors.green, width: 2),
       ),
-    );
-  }
+      child: Stack(
+        children: [
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  bottomLeft: Radius.circular(20),
+                ),
+                child: Image.network(
+                  character.imageUrl,
+                  fit: BoxFit.cover,
+                  height: 180,
+                  width: 140,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: 140,
+                    height: 180,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.image, size: 50, color: Colors.grey),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              character.name,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: character.rarity == 'SSR' ? Colors.orange : Colors.blue,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              character.rarity,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        character.type,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        character.description,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.touch_app, size: 16, color: Colors.pink),
+                          const SizedBox(width: 4),
+                          Text(
+                            'แตะเพื่อดูรายละเอียด',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.pink[400],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Favorite button
+          // Favorite button
+Positioned(
+  bottom: 8,
+  right: 8,
+  child: StatefulBuilder(
+    builder: (context, setState) {
+      final favManager = FavoritesManager();
+      final isFavorite = favManager.isFavorite(character);
+      return GestureDetector(
+        onTap: () async {
+          await favManager.toggleFavorite(character);
+          setState(() {}); // Refresh this widget
+        },
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(
+            isFavorite ? Icons.favorite : Icons.favorite_border,
+            color: isFavorite ? Colors.red : Colors.grey,
+            size: 24,
+          ),
+        ),
+      );
+    },
+  ),
+),
+        ],
+      ),
+    ),
+  );
+}
 
   void _showCharacterDetail(BuildContext context, Character character) {
     showModalBottomSheet(
@@ -2200,7 +2288,9 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _searchResultCard(Character character) {
-    return Container(
+  return GestureDetector(
+    onTap: () => _showCharacterDetail(context, character),
+    child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -2214,6 +2304,150 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ],
         border: Border.all(color: Colors.green, width: 1.5),
+      ),
+      child: Stack(
+        children: [
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  character.imageUrl,
+                  width: 60,
+                  height: 60,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      character.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      character.type,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: character.rarity == 'SSR' ? Colors.orange : Colors.blue,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  character.rarity,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+        ],
+      ),
+    ),
+  );
+}
+
+void _showCharacterDetail(BuildContext context, Character character) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => CharacterDetailModal(character: character),
+  );
+}
+}
+
+class FavoritesScreen extends StatefulWidget {
+  const FavoritesScreen({super.key});
+
+  @override
+  State<FavoritesScreen> createState() => _FavoritesScreenState();
+}
+
+class _FavoritesScreenState extends State<FavoritesScreen> {
+  @override
+Widget build(BuildContext context) {
+  final double topPadding = MediaQuery.of(context).padding.top + kToolbarHeight + 16;
+  final favManager = FavoritesManager();
+  final favorites = favManager.getFavorites();
+  
+  return Padding(
+    padding: EdgeInsets.only(top: topPadding),
+    child: favorites.isEmpty
+        ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.favorite_border,
+                  size: 80,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'รายการโปรดของคุณ',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'ยังไม่มีตัวละครในรายการโปรด',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: favorites.length,
+            itemBuilder: (context, index) {
+              return _favoriteCard(favorites[index]);
+            },
+          ),
+  );
+}
+
+Widget _favoriteCard(Character character) {
+  return GestureDetector(
+    onTap: () => _showCharacterDetail(context, character),
+    child: Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.pink[50],
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.pink, width: 1.5),
       ),
       child: Row(
         children: [
@@ -2248,6 +2482,13 @@ class _SearchScreenState extends State<SearchScreen> {
               ],
             ),
           ),
+          IconButton(
+            icon: const Icon(Icons.favorite, color: Colors.red),
+            onPressed: () async {
+              await FavoritesManager().toggleFavorite(character);
+              setState(() {}); // Refresh the list
+            },
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -2265,12 +2506,19 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ],
       ),
+    ),
+  );
+}
+
+  void _showCharacterDetail(BuildContext context, Character character) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CharacterDetailModal(character: character),
     );
   }
 }
-
-class FavoritesScreen extends StatelessWidget {
-  const FavoritesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -2309,21 +2557,27 @@ class FavoritesScreen extends StatelessWidget {
       ),
     );
   }
-}
 
-class ProfileScreen extends StatelessWidget {
+
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
- @override
-Widget build(BuildContext context) {
-  final double topPadding = MediaQuery.of(context).padding.top + kToolbarHeight + 16;
-  
-  return SingleChildScrollView(
-    child: Padding(
-      padding: EdgeInsets.only(top: topPadding),
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final double topPadding = MediaQuery.of(context).padding.top + kToolbarHeight + 16;
+    final favoritesCount = FavoritesManager().getFavorites().length;
+    
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.only(top: topPadding),
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
             CircleAvatar(
               radius: 60,
               backgroundColor: Colors.white,
@@ -2352,13 +2606,13 @@ Widget build(BuildContext context) {
               child: Column(
                 children: [
                   Text(
-  FirebaseAuth.instance.currentUser?.email ?? 'hawkskywalker',
-  style: const TextStyle(
-    fontSize: 24,
-    fontWeight: FontWeight.bold,
-    color: Colors.black87,
-  ),
-),
+                    FirebaseAuth.instance.currentUser?.email ?? 'hawkskywalker',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   const Text(
                     'Nice to meet you, Lets have fun!',
@@ -2373,7 +2627,7 @@ Widget build(BuildContext context) {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _statCard('ตัวละคร', '${characters.length}'),
-                      _statCard('โปรด', '0'),
+                      _statCard('โปรด', '$favoritesCount'),
                       _statCard('เลเวล', '15'),
                     ],
                   ),
@@ -2411,40 +2665,39 @@ Widget build(BuildContext context) {
                 ],
               ),
             ),
-                     // Add this sign out button at the end, before the last SizedBox
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 32),
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () async {
-                await FirebaseAuth.instance.signOut();
-                if (context.mounted) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const AuthScreen()),
-                    (route) => false,
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 32),
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                  if (context.mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const AuthScreen()),
+                      (route) => false,
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                child: const Text(
+                  'ออกจากระบบ',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
-              child: const Text(
-                'ออกจากระบบ',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
             ),
-          ),
-          const SizedBox(height: 20),
-        ],
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _statCard(String label, String value) {
     return Column(
